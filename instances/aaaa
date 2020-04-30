@@ -1,0 +1,4 @@
+# Example instance
+2 3 # num-jobs num-tasks
+2 4 0 3 1 2
+1 7 0 6 2 5

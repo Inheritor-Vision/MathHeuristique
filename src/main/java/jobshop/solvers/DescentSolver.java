@@ -4,7 +4,10 @@ import jobshop.Instance;
 import jobshop.Result;
 import jobshop.Solver;
 import jobshop.encodings.ResourceOrder;
+import jobshop.encodings.Task;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public class DescentSolver implements Solver {
@@ -33,6 +36,10 @@ public class DescentSolver implements Solver {
             this.machine = machine;
             this.firstTask = firstTask;
             this.lastTask = lastTask;
+        }
+        @Override
+        public String toString() {
+            return("("+ machine + "," + firstTask + "," + lastTask + ")");
         }
     }
 
@@ -67,24 +74,102 @@ public class DescentSolver implements Solver {
 
         /** Apply this swap on the given resource order, transforming it into a new solution. */
         public void applyOn(ResourceOrder order) {
-            throw new UnsupportedOperationException();
+
+            Task temp = order.tasksByMachine[machine][t1];
+            order.tasksByMachine[machine][t1] = order.tasksByMachine[machine][t2];
+            order.tasksByMachine[machine][t2] = temp;
+
+
         }
     }
 
 
     @Override
     public Result solve(Instance instance, long deadline) {
-        throw new UnsupportedOperationException();
+        GreedySolver gr = new GreedySolver(GreedySolver.Priority.EST_LRPT);
+        Result res = gr.solve(instance,deadline);
+
+
+        ResourceOrder ro = ResourceOrder.fromSchedule(res.schedule);
+        ResourceOrder resRo = ro.copy();
+        List<Block> lb = blocksOfCriticalPath(ro);
+        boolean changed = true;
+
+        while(changed){
+            changed = false;
+            for(int a = 0; a < lb.size(); a++){
+                List<Swap> ls = neighbors(lb.get(a));
+                for (int b = 0; b < ls.size(); b++){
+                    ResourceOrder tempRo = ro.copy();
+                    ls.get(b).applyOn(tempRo);
+                    if (tempRo.toSchedule().makespan() < resRo.toSchedule().makespan()){
+                        resRo = tempRo;
+                        changed = true;
+                    };
+                }
+            }
+            ro = resRo; // del .copy() sans test /!\
+            lb = blocksOfCriticalPath(ro);
+        }
+        return new Result(instance, resRo.toSchedule(), Result.ExitCause.Blocked);
+
+
     }
 
     /** Returns a list of all blocks of the critical path. */
-    List<Block> blocksOfCriticalPath(ResourceOrder order) {
-        throw new UnsupportedOperationException();
+    public List<Block> blocksOfCriticalPath(ResourceOrder order) {
+        List<Task> tl  = order.toSchedule().criticalPath();
+        LinkedList<Block> res = new LinkedList<Block>();
+        int lastMachine = order.instance.machine(tl.get(0).job,tl.get(0).task);
+        Task firstTask  = tl.get(0);
+        int index = 0;
+        for (int a = 1; a < tl.size(); a++){
+            if(order.instance.machine(tl.get(a).job, tl.get(a).task) == lastMachine){
+                index++;
+            }else if(index > 0){
+                int ind = 0;
+                boolean found = false;
+                while(ind < order.instance.numJobs && !found){
+                    if(order.tasksByMachine[lastMachine][ind].task == firstTask.task && order.tasksByMachine[lastMachine][ind].job == firstTask.job){
+                        res.addLast(new Block(lastMachine,ind,ind+index));
+                        found = true;
+                    }
+                    ind ++;
+                }
+                index = 0;
+                firstTask = tl.get(a);
+                lastMachine = order.instance.machine(tl.get(a).job,tl.get(a).task);
+            }else{
+                index = 0;
+                firstTask = tl.get(a);
+                lastMachine = order.instance.machine(tl.get(a).job,tl.get(a).task);
+            }
+        }
+        if(index > 0){
+            int ind = 0;
+            boolean found = false;
+            while(ind < order.instance.numJobs && !found){
+                if(order.tasksByMachine[lastMachine][ind].task == firstTask.task && order.tasksByMachine[lastMachine][ind].job == firstTask.job){
+                    res.addLast(new Block(lastMachine,ind,ind+index));
+                    found = true;
+                }
+                ind ++;
+            }
+        }
+
+        return res;
     }
 
     /** For a given block, return the possible swaps for the Nowicki and Smutnicki neighborhood */
     List<Swap> neighbors(Block block) {
-        throw new UnsupportedOperationException();
+        LinkedList<Swap> res = new LinkedList<Swap>();
+        if(block.lastTask - block.firstTask  == 1){
+            res.addLast(new Swap(block.machine, block.firstTask, block.lastTask));
+        }else{
+            res.addLast(new Swap(block.machine, block.firstTask, block.firstTask+1));
+            res.addLast(new Swap(block.machine, block.lastTask-1, block.lastTask));
+        }
+        return res;
     }
 
 }

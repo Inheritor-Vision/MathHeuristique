@@ -20,9 +20,6 @@ public class GreedySolver implements Solver {
     }
 
     public GreedySolver( Priority a){
-        if(a==Priority.EST_SPT){
-            System.out.println("aaaaaaaaaa");
-        }
         this.prio = a;
 
     }

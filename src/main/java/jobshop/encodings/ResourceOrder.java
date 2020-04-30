@@ -128,4 +128,80 @@ public class ResourceOrder extends Encoding {
         return s.toString();
     }
 
+    public Schedule toSchedule2() {
+        int[][] startTimes = new int[instance.numJobs][instance.numTasks];
+        int[] index = new int[instance.numMachines];
+        int[] avancement = new int[instance.numJobs];
+        int[] tempsJob = new int[instance.numJobs];
+        int[] tempsMachine = new int[instance.numMachines];
+        int fin = 0;
+        boolean fin2= false;
+        int a= 0;
+
+        while(fin < instance.numJobs * instance.numTasks){
+            a =0;
+            fin2= false;
+
+            while(a <instance.numMachines && !fin2){
+                if(index[a]< instance.numJobs) {
+
+                    if (avancement[tasksByMachine[a][index[a]].job] == tasksByMachine[a][index[a]].task) {
+                        fin2 = true;
+                        if (tempsMachine[a] > tempsJob[tasksByMachine[a][index[a]].job]) {
+                            startTimes[tasksByMachine[a][index[a]].job][tasksByMachine[a][index[a]].task] = tempsMachine[a];
+                            tempsMachine[a] += instance.duration(tasksByMachine[a][index[a]].job, tasksByMachine[a][index[a]].task);
+                            tempsJob[tasksByMachine[a][index[a]].job] = tempsMachine[a];
+
+                        } else {
+                            startTimes[tasksByMachine[a][index[a]].job][tasksByMachine[a][index[a]].task] = tempsJob[tasksByMachine[a][index[a]].job];
+                            tempsJob[tasksByMachine[a][index[a]].job] += instance.duration(tasksByMachine[a][index[a]].job, tasksByMachine[a][index[a]].task);
+                            tempsMachine[a] = tempsJob[tasksByMachine[a][index[a]].job];
+                        }
+
+
+
+
+
+                        avancement[tasksByMachine[a][index[a]].job]++;
+                        index[a]++;
+
+                    }
+                }
+                a++;
+            }
+            fin++;
+        }
+
+        return new Schedule(instance,startTimes);
+    }
+    public static ResourceOrder fromSchedule(Schedule sc){
+        int smaller_time = -1;
+        int saved_Job = 0;
+        int saved_Task = 0;
+        ResourceOrder res = new ResourceOrder(sc.pb);
+        int[] index = new int[res.instance.numJobs];
+        int[] indexMachine = new int[res.instance.numMachines];
+        for (int b = 0; b < res.instance.numTasks*res.instance.numJobs; b++){
+            for (int a = 0; a < res.instance.numJobs; a++){
+                if(index[a]< res.instance.numTasks){
+                    if (smaller_time == -1){
+                        smaller_time = sc.startTime(a,index[a]);
+                    }
+                    if(sc.startTime(a,index[a]) <= smaller_time){
+                        saved_Job = a;
+                        saved_Task = index[a];
+                        smaller_time = sc.startTime(a,index[a]);
+                    }
+                }
+            }
+            smaller_time = -1;
+            index[saved_Job]++;
+            int mach = res.instance.machine(saved_Job,saved_Task);
+            res.tasksByMachine[mach][indexMachine[mach]] = new Task(saved_Job,saved_Task);
+            indexMachine[mach]++;
+        }
+        return res;
+
+    }
+
 }

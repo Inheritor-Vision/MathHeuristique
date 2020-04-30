@@ -132,4 +132,16 @@ public class Schedule {
         assert isCriticalPath(path);
         return path;
     }
+    @Override
+    public String toString() {
+        String res = "\nDISPLAY MODE: Job *id*: Task *id*[*start time*], ...\n";
+        for(int i = 0; i < pb.numJobs; i++){
+            res +="Job " + i + ": ";
+            for (int j = 0; j < pb.numTasks; j++){
+                res += "Task "+ j + "[" + this.times[i][j] + "], ";
+            }
+            res += "\n";
+        }
+        return res;
+    }
 }

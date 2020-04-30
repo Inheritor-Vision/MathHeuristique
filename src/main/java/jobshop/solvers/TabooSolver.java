@@ -6,11 +6,18 @@ import jobshop.Solver;
 import jobshop.encodings.ResourceOrder;
 import jobshop.encodings.Task;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-public class DescentSolver implements Solver {
+public class TabooSolver implements Solver {
+
+    final int dureeTabou;
+    final int maxIter;
+
+    public TabooSolver(int dT, int mI){
+            dureeTabou = dT;
+            maxIter = mI;
+    }
 
     /** A block represents a subsequence of the critical path such that all tasks in it execute on the same machine.
      * This class identifies a block in a ResourceOrder representation.
@@ -86,32 +93,65 @@ public class DescentSolver implements Solver {
 
     @Override
     public Result solve(Instance instance, long deadline) {
-        GreedySolver gr = new GreedySolver(GreedySolver.Priority.SPT);
+        GreedySolver gr = new GreedySolver(GreedySolver.Priority.EST_LRPT);
         Result res = gr.solve(instance,deadline);
 
 
-        ResourceOrder ro = ResourceOrder.fromSchedule(res.schedule);
-        ResourceOrder resRo = ro.copy();
-        List<Block> lb = blocksOfCriticalPath(ro);
+        int[][] tabooMove = new int[instance.numJobs * instance.numTasks][instance.numJobs * instance.numTasks];
+        int k = 0;
+        ResourceOrder savedRo = ResourceOrder.fromSchedule(res.schedule);
+        ResourceOrder oriRo;
+        ResourceOrder bestRo = ResourceOrder.fromSchedule(res.schedule);
+        int saved_makespan;
+        int[] savedFL = new int [2];
         boolean changed = true;
 
-        while(changed){
+        while (changed && k < maxIter){
             changed = false;
-            for(int a = 0; a < lb.size(); a++){
-                List<Swap> ls = neighbors(lb.get(a));
-                for (int b = 0; b < ls.size(); b++){
-                    ResourceOrder tempRo = ro.copy();
-                    ls.get(b).applyOn(tempRo);
-                    if (tempRo.toSchedule().makespan() < resRo.toSchedule().makespan()){
-                        resRo = tempRo;
+            oriRo = savedRo;
+            saved_makespan = Integer.MAX_VALUE;
+            List<Block> lb = blocksOfCriticalPath(oriRo);
+            savedFL[0] = -1;
+
+            for (Block block : lb) {
+                List<Swap> ls = neighbors(block);
+
+                for (Swap swap : ls) {
+                    int f = oriRo.tasksByMachine[swap.machine][swap.t1].job * instance.numTasks + oriRo.tasksByMachine[swap.machine][swap.t1].task;
+                    int l = oriRo.tasksByMachine[swap.machine][swap.t2].job * instance.numTasks + oriRo.tasksByMachine[swap.machine][swap.t2].task;
+
+                    ResourceOrder tempRo = oriRo.copy();
+                    swap.applyOn(tempRo);
+                    if(tempRo.toSchedule().makespan() < bestRo.toSchedule().makespan()){
+                        saved_makespan = tempRo.toSchedule().makespan();
+                        savedRo = tempRo;
+                        savedFL[0] = f;
+                        savedFL[1] = l;
                         changed = true;
-                    };
+                    }else if (tabooMove[f][l] < k && tempRo.toSchedule().makespan() < saved_makespan) {
+
+                        saved_makespan = tempRo.toSchedule().makespan();
+                        savedRo = tempRo;
+                        savedFL[0] = f;
+                        savedFL[1] = l;
+                        changed = true;
+
+                    }
+
+
                 }
             }
-            ro = resRo.copy();
-            lb = blocksOfCriticalPath(ro);
+            if(savedFL[0] != -1){
+                tabooMove[savedFL[1]][savedFL[0]] = k + dureeTabou;
+                if( savedRo.toSchedule().makespan() < bestRo.toSchedule().makespan()){
+                    bestRo = savedRo;
+                }
+            }
+
+            k++;
         }
-        return new Result(instance, resRo.toSchedule(), Result.ExitCause.Blocked);
+
+        return new Result(instance, bestRo.toSchedule(), Result.ExitCause.Blocked);
 
 
     }

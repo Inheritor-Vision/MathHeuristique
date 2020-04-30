@@ -81,4 +81,30 @@ public class JobNumbers extends Encoding {
     public String toString() {
         return Arrays.toString(Arrays.copyOfRange(jobs,0, nextToSet));
     }
+
+    public static JobNumbers fromSchedule(Schedule sc){
+        JobNumbers res = new JobNumbers(sc.pb);
+        int smaller_time = -1;
+        int saved_Job = 0;
+        int indexJobs = 0;
+        int[] index = new int[res.instance.numJobs];
+        for (int b = 0; b < res.instance.numTasks*res.instance.numJobs; b++){
+            for (int a = 0; a < res.instance.numJobs; a++){
+                if(index[a]< res.instance.numTasks){
+                    if (smaller_time == -1){
+                        smaller_time = sc.startTime(a,index[a]);
+                    }
+                    if(sc.startTime(a,index[a]) <= smaller_time){
+                        saved_Job = a;
+                        smaller_time = sc.startTime(a,index[a]);
+                    }
+                }
+            }
+            smaller_time = -1;
+            index[saved_Job]++;
+            res.jobs[indexJobs] = saved_Job;
+            indexJobs++;
+        }
+        return res;
+    }
 }
