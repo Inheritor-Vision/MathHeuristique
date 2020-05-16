@@ -6,11 +6,23 @@ import jobshop.Solver;
 import jobshop.encodings.ResourceOrder;
 import jobshop.encodings.Task;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
-public class DescentSolver implements Solver {
+public class Recuit implements Solver {
+
+    final double T;
+    final int maxIter;
+    final double redFact;
+    final int redIter;
+
+    public Recuit(int mI, double T,double redFact, int redIter){
+            this.T = T;
+            this.redFact = redFact;
+            this.redIter = redIter;
+            maxIter = mI;
+    }
 
     /** A block represents a subsequence of the critical path such that all tasks in it execute on the same machine.
      * This class identifies a block in a ResourceOrder representation.
@@ -85,33 +97,57 @@ public class DescentSolver implements Solver {
 
 
     @Override
-    public Result solve(Instance instance, long deadline) {
+    public Result solve( Instance instance, long deadline) {
         GreedySolver2 gr = new GreedySolver2(GreedySolver2.Priority.EST_LRPT);
         Result res = gr.solve(instance,deadline);
 
 
-        ResourceOrder ro = ResourceOrder.fromSchedule(res.schedule);
-        ResourceOrder resRo = ro.copy();
-        List<Block> lb = blocksOfCriticalPath(ro);
-        boolean changed = true;
 
-        while(changed){
-            changed = false;
-            for(int a = 0; a < lb.size(); a++){
-                List<Swap> ls = neighbors(lb.get(a));
-                for (int b = 0; b < ls.size(); b++){
-                    ResourceOrder tempRo = ro.copy();
-                    ls.get(b).applyOn(tempRo);
-                    if (tempRo.toSchedule().makespan() < resRo.toSchedule().makespan()){
-                        resRo = tempRo;
-                        changed = true;
-                    };
+        int k =  0;
+        double T = this.T;
+        ResourceOrder savedRo = ResourceOrder.fromSchedule(res.schedule);
+        int saved_makespan = savedRo.toSchedule().makespan();
+        ResourceOrder bestRo = savedRo.copy();
+        int best_makespan = saved_makespan;
+        boolean changed = true;
+        List<Block> lb = null;
+
+        while ( k < maxIter){
+            if(changed){
+                lb = blocksOfCriticalPath(savedRo);
+                if(saved_makespan<best_makespan){
+                    best_makespan = saved_makespan;
+                    bestRo = savedRo;
                 }
             }
-            ro = resRo; // del .copy() sans test /!\
-            lb = blocksOfCriticalPath(ro);
+            int randomNum = ThreadLocalRandom.current().nextInt(lb.size());
+            List<Swap> ls = neighbors(lb.get(randomNum));
+            randomNum = ThreadLocalRandom.current().nextInt(ls.size());
+            ResourceOrder tempRo = savedRo.copy();
+            ls.get(randomNum).applyOn(tempRo);
+            changed = false;
+            int tempRomakespan = tempRo.toSchedule().makespan();
+            if(tempRomakespan <= saved_makespan){
+                savedRo = tempRo;
+                saved_makespan = tempRomakespan;
+                changed = true;
+            }else {
+
+                if(ThreadLocalRandom.current().nextDouble() <= Math.exp(((double)saved_makespan - tempRomakespan)/T)){
+                    savedRo = tempRo;
+                    saved_makespan = tempRomakespan;
+                    changed = true;
+                }
+                if(k % redIter == 0){
+                    T = redFact * T;
+                }
+            }
+            k++;
+
+
         }
-        return new Result(instance, resRo.toSchedule(), Result.ExitCause.Blocked);
+
+        return new Result(instance, bestRo.toSchedule(), Result.ExitCause.Blocked);
 
 
     }
@@ -119,7 +155,6 @@ public class DescentSolver implements Solver {
     /** Returns a list of all blocks of the critical path. */
     public List<Block> blocksOfCriticalPath(ResourceOrder order) {
         List<Task> tl  = order.toSchedule().criticalPath();
-
         LinkedList<Block> res = new LinkedList<Block>();
         int lastMachine = order.instance.machine(tl.get(0).job,tl.get(0).task);
         Task firstTask  = tl.get(0);
@@ -157,6 +192,7 @@ public class DescentSolver implements Solver {
                 ind ++;
             }
         }
+
         return res;
     }
 

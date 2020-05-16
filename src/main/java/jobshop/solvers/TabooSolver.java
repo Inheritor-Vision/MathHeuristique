@@ -93,7 +93,7 @@ public class TabooSolver implements Solver {
 
     @Override
     public Result solve(Instance instance, long deadline) {
-        GreedySolver gr = new GreedySolver(GreedySolver.Priority.EST_LRPT);
+        GreedySolver2 gr = new GreedySolver2(GreedySolver2.Priority.EST_LRPT);
         Result res = gr.solve(instance,deadline);
 
 
@@ -103,11 +103,12 @@ public class TabooSolver implements Solver {
         ResourceOrder oriRo;
         ResourceOrder bestRo = ResourceOrder.fromSchedule(res.schedule);
         int saved_makespan;
+        int best_makespan = res.schedule.makespan();
         int[] savedFL = new int [2];
         boolean changed = true;
 
-        while (changed && k < maxIter){
-            changed = false;
+        while ( k < maxIter){
+
             oriRo = savedRo;
             saved_makespan = Integer.MAX_VALUE;
             List<Block> lb = blocksOfCriticalPath(oriRo);
@@ -122,19 +123,20 @@ public class TabooSolver implements Solver {
 
                     ResourceOrder tempRo = oriRo.copy();
                     swap.applyOn(tempRo);
-                    if(tempRo.toSchedule().makespan() < bestRo.toSchedule().makespan()){
-                        saved_makespan = tempRo.toSchedule().makespan();
+                    int tempRomakespan = tempRo.toSchedule().makespan();
+                    if(tempRomakespan < best_makespan){
+                        saved_makespan = tempRomakespan;
                         savedRo = tempRo;
                         savedFL[0] = f;
                         savedFL[1] = l;
-                        changed = true;
-                    }else if (tabooMove[f][l] < k && tempRo.toSchedule().makespan() < saved_makespan) {
 
-                        saved_makespan = tempRo.toSchedule().makespan();
+                    }else if (tabooMove[f][l] < k && tempRomakespan < saved_makespan) {
+
+                        saved_makespan = tempRomakespan;
                         savedRo = tempRo;
                         savedFL[0] = f;
                         savedFL[1] = l;
-                        changed = true;
+
 
                     }
 
@@ -143,8 +145,9 @@ public class TabooSolver implements Solver {
             }
             if(savedFL[0] != -1){
                 tabooMove[savedFL[1]][savedFL[0]] = k + dureeTabou;
-                if( savedRo.toSchedule().makespan() < bestRo.toSchedule().makespan()){
+                if( saved_makespan < best_makespan){
                     bestRo = savedRo;
+                    best_makespan = saved_makespan;
                 }
             }
 

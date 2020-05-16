@@ -28,10 +28,34 @@ public class Main {
         solvers.put("lpt", new GreedySolver(GreedySolver.Priority.LPT));
         solvers.put("srpt", new GreedySolver(GreedySolver.Priority.SRPT));
         solvers.put("lrpt", new GreedySolver(GreedySolver.Priority.LRPT));
-        solvers.put("estspt", new GreedySolver(GreedySolver.Priority.EST_SPT));
-        solvers.put("estlrpt", new GreedySolver(GreedySolver.Priority.EST_LRPT));
+        solvers.put("est_spt", new GreedySolver(GreedySolver.Priority.EST_SPT));
+        solvers.put("est_lrpt", new GreedySolver(GreedySolver.Priority.EST_LRPT));
+        solvers.put("spt2", new GreedySolver2(GreedySolver2.Priority.SPT));
+        solvers.put("lpt2", new GreedySolver2(GreedySolver2.Priority.LPT));
+        solvers.put("srpt2", new GreedySolver2(GreedySolver2.Priority.SRPT));
+        solvers.put("lrpt2", new GreedySolver2(GreedySolver2.Priority.LRPT));
+        solvers.put("est_spt2", new GreedySolver2(GreedySolver2.Priority.EST_SPT));
+        solvers.put("est_lrpt2", new GreedySolver2(GreedySolver2.Priority.EST_LRPT));
         solvers.put("descent", new DescentSolver());
-        solvers.put("taboo", new TabooSolver(10,1000));
+        solvers.put("taboo1", new TabooSolver(10,100));
+        solvers.put("taboo2", new TabooSolver(10,1000));
+        solvers.put("taboo3", new TabooSolver(10,10000));
+        solvers.put("taboo4", new TabooSolver(10,100000));
+        solvers.put("taboo5", new TabooSolver(0,1000));
+        solvers.put("taboo6", new TabooSolver(5,1000));
+        solvers.put("taboo7", new TabooSolver(15,1000));
+        solvers.put("taboo8", new TabooSolver(20,1000));
+        solvers.put("taboo9", new TabooSolver(10,10));
+        solvers.put("recuit1", new Recuit(100,100.0,0.99, 10));
+        solvers.put("recuit2", new Recuit(1000,100.0,0.99, 10));
+        solvers.put("recuit3", new Recuit(10000,100.0,0.99, 10));
+        solvers.put("recuit4", new Recuit(50000,100.0,0.99, 10));
+        solvers.put("recuit5", new Recuit(10000,50.0,0.8, 10));
+        solvers.put("recuit6", new Recuit(10000,500.0,0.5, 10));
+        solvers.put("recuit7", new Recuit(10000,100.0,0.7, 10));
+        solvers.put("recuit8", new Recuit(10000,100.0,0.99, 1));
+        solvers.put("recuit9", new Recuit(10000,50.0,0.8, 50));
+
         // add new solvers here
     }
 

@@ -14,7 +14,7 @@ public class DebuggingMain {
     public static void main(String[] args) {
         try {
             // load the aaa1 instance
-            Instance instance = Instance.fromFile(Paths.get("instances/ft20"));
+            Instance instance = Instance.fromFile(Paths.get("instances/la40"));
 
             //instances/aaa1:
             //2 3 # num-jobs num-tasks
@@ -50,11 +50,12 @@ public class DebuggingMain {
             System.out.println("VALID: " + sched.isValid());
             System.out.println("MAKESPAN: " + sched.makespan());*/
 
-            TabooSolver ds = new TabooSolver(10,1000);
+            DescentSolver ds = new DescentSolver();
             Result res = ds.solve(instance, 100);
-            GreedySolver gr = new GreedySolver(GreedySolver.Priority.SPT);
-            Result res2 = gr.solve(instance,100);
-            System.out.println("gr: " + res2.schedule.makespan() + "\nds: " + res.schedule.makespan());
+            //GreedySolver gr = new GreedySolver(GreedySolver.Priority.EST_LRPT);
+            //Result res2 = gr.solve(instance,100);
+            System.out.print("res la40: " + res.schedule.toString());
+            //System.out.println("gr: " + res2.schedule.makespan() + "\nds: " + res.schedule.makespan());
 
             //ds.blocksOfCriticalPath(new ResourceOrder(instance));
 
